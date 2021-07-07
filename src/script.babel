@@ -1,0 +1,189 @@
+const audio = document.getElementById('beep');
+/* builds both break and session length containers so they both look identical, but eventually with different values*/
+const TimerSet = (props) => (
+<div className="timer-container">
+  <div className="timer-flex">
+  <h1 id ={props.labelId}>{props.title}</h1>
+  <div className="button-container">
+    <button id={props.minusId} onClick={props.handleMinus}>
+      <i class="fas fa-minus fa-sm"></i>
+    </button>
+    <span id={props.lengthId}>{props.count}</span>
+    <button id={props.plusId} onClick={props.handlePlus}>
+      <i class="fas fa-plus fa-sm"></i>
+    </button>
+  </div> 
+  </div>
+</div>  
+);
+/* builds the main clock container using props */
+const Clock = (props) => (
+<div className="clock-container">
+  <h1 id="timer-label">{props.activeTimer}</h1>
+  <span id="time-left">{props.countTimer}</span>
+  <div>
+    <button id="start_stop" onClick={props.playPause}>
+      <i className="fas fa-play fa-sm"/>
+      <i className="fa fa-pause fa-sm" />
+    </button>
+    <button id="reset" onClick={props.reset}><i class="fas fa-redo fa-sm"></i></button>
+  </div>
+  </div>
+);
+//parent component
+class Timers extends React.Component{
+  constructor(props){
+    super(props)
+    this.duration = undefined;
+    this.state = {
+      breakCount: 5,
+      sessionCount: 25,
+      activeCount: 25 * 60,
+      activeTimer: "Session",
+      timerActive: false
+    }
+  this.timerDisplay = this.timerDisplay.bind(this); 
+  this.handlePlayPause = this.handlePlayPause.bind(this);
+    this.handleReset = this.handleReset.bind(this);
+    this.sessionPlus = this.sessionPlus.bind(this);
+    this.sessionMinus = this.sessionMinus.bind(this);
+    this.breakPlus = this.breakPlus.bind(this);
+    this.breakMinus = this.breakMinus.bind(this);
+  }
+  
+  componentWillUnmount() {
+    clearInterval(this.duration);
+  }
+ sessionPlus = () => {
+   if(!this.state.timerActive && this.state.sessionCount < 60){
+   this.setState({
+     sessionCount: this.state.sessionCount + 1,
+     activeCount: this.state.activeCount + 1 * 60
+   });
+   }    
+ } 
+ sessionMinus = () => {
+   if(this.state.sessionCount > 1 && !this.state.timerActive){
+   this.setState({
+     sessionCount: this.state.sessionCount - 1,
+     activeCount: this.state.activeCount - 1 * 60
+   });
+  }
+ }
+ breakPlus = () => {
+   if(this.state.breakCount < 60){
+   this.setState({
+     breakCount: this.state.breakCount + 1
+   });
+  }
+ }
+ breakMinus = () => {
+   if(this.state.breakCount > 1){
+     this.setState({
+       breakCount: this.state.breakCount - 1
+     });
+   }
+ } 
+ timerDisplay = (count) => {
+    let minutes = Math.floor(count / 60);
+    let seconds = count % 60
+    if(minutes < 10){
+      minutes = "0" + minutes
+    };
+   if(seconds < 10){
+     seconds = "0" + seconds
+   };
+    return minutes + ":" + seconds;
+  } 
+  handlePlayPause = () => {
+    if(this.state.timerActive){
+      clearInterval(this.duration);
+      this.setState({
+        timerActive: false
+      });
+    }
+    else{
+      this.setState({
+        timerActive: true
+      });
+    // create countdown:  
+     this.duration = setInterval(() => {
+       if(this.state.activeCount === 0){
+         if(this.state.activeTimer === "Session"){
+         this.setState({
+            activeTimer: "Break",
+            activeCount: this.state.breakCount * 60
+          });
+       }
+         else{
+           this.setState({
+             activeTimer: "Session",
+             activeCount: this.state.sessionCount * 60
+           });
+         }
+         audio.play();
+       }
+       else{
+         this.setState({
+            activeCount: this.state.activeCount - 1
+          });
+       }
+       
+      }, 1000);                         
+    }  
+  }
+  handleReset = () => {
+    this.setState({
+      breakCount: 5,
+      sessionCount: 25,
+      activeCount: 25 * 60,
+      activeTimer: "Session",
+      timerActive: false
+    });
+    clearInterval(this.duration);
+    audio.pause();
+    audio.currentTime = 0;
+  }  
+render(){
+  //props for all 3 containers:
+  const breakProps = {
+    title: "Break Length",
+    count: this.state.breakCount,
+    labelId: "break-label",
+    lengthId: "break-length",
+    minusId: "break-decrement",
+    plusId: "break-increment",
+    handleMinus: this.breakMinus,
+    handlePlus: this.breakPlus
+  };
+  const sessionProps = {
+    title: "Session Length",
+    count: this.state.sessionCount,
+    labelId: "session-label",
+    lengthId: "session-length",
+    minusId: "session-decrement",
+    plusId: "session-increment",
+    handleMinus: this.sessionMinus,
+    handlePlus: this.sessionPlus
+  };
+  const clockProps = {
+    activeTimer: this.state.activeTimer,
+    countTimer: this.timerDisplay(this.state.activeCount),
+    playPause: this.handlePlayPause,
+    reset: this.handleReset
+  };
+  return(
+    <div>
+      <h1 className="headline">25 + 5 Clock</h1>
+  <div className="main-flex">
+      <TimerSet {...breakProps}/>
+      <TimerSet {...sessionProps} />      
+  </div>
+    <div className="main-flex">
+      <Clock {...clockProps}/>
+      </div> 
+      </div>
+  )
+}  
+}
+ReactDOM.render(<Timers/>, document.getElementById("timers"))
